@@ -8,6 +8,7 @@ library dwc;
 import 'dart:io';
 import 'package:logging/logging.dart' show Level;
 import 'src/compiler.dart';
+import 'src/dart2js_builder.dart';
 import 'src/file_system.dart';
 import 'src/file_system/console.dart';
 import 'src/file_system/path.dart' as fs;
@@ -68,11 +69,21 @@ Future<CompilerResult> run(List<String> args) {
     var currentDir = new Directory.current().path;
     var compiler = new Compiler(fileSystem, options, currentDir);
     var res;
-    return compiler.run()
-      .transform((_) => (res = new CompilerResult._(messages, compiler.output)))
-      .chain((_) => symlinkPubPackages(res, options))
-      .chain((_) => emitFiles(compiler.output, options.clean))
-      .transform((_) => res);
+    
+    var tasks = new FutureGroup();
+    // TODO(adam): clean up the names
+    var f = compiler.run();
+    f.transform((_) => (res = new CompilerResult._(messages, compiler.output)))
+    .chain((_) => symlinkPubPackages(res, options))
+    .chain((_) => emitFiles(compiler.output, options.clean))
+    .transform((_) => res);
+    tasks.add(f);
+    
+    var dart2jsBuilder = new Dart2jsBuilder(fileSystem, options, currentDir: currentDir);
+    var ff = dart2jsBuilder.run();
+    tasks.add(ff);
+    
+    return tasks.future;
   }, printTime: true, useColors: options.useColors);
 }
 
