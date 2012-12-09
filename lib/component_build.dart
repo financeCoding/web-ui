@@ -38,6 +38,8 @@ void build(List<String> arguments, List<String> entryPoints) {
   var removedFiles = args["removed"];
   var cleanBuild = args["clean"];
   var machineFormat = args["machine"];
+  var dart2jsEnabled = args["dart2js"];
+  var dart2jsPath = args["dart2js-path"];
   var fullBuild = changedFiles.isEmpty && removedFiles.isEmpty && !cleanBuild;
 
   for (var file in entryPoints) {
@@ -54,6 +56,13 @@ void build(List<String> arguments, List<String> entryPoints) {
       var args = [];
       if (machineFormat) args.add('--json_format');
       if (Platform.operatingSystem == 'windows') args.add('--no-colors');
+      
+      if (dart2jsEnabled) {
+        args.add('--dart2js');
+        args.add('--dart2js-path');
+        args.add(dart2jsPath);
+      }
+      
       args.addAll(['-o', outDir.toString(), file]);
       dwc.run(args);
 
@@ -111,6 +120,10 @@ ArgResults _processArgs(List<String> arguments) {
     ..addFlag("clean", negatable: false, help: "remove any build artifacts")
     ..addFlag("machine", negatable: false,
         help: "produce warnings in a machine parseable format")
+    ..addFlag("dart2js", negatable: false,
+        help: "enable the generating of javascript code")    
+    ..addOption('dart2js-path', abbr: 'd',
+      help: 'absolute path for dart2js', defaultsTo: 'dart2js')    
     ..addFlag("help", negatable: false, help: "displays this help and exit");
   var args = parser.parse(arguments);
   if (args["help"]) {

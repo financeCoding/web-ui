@@ -69,19 +69,22 @@ Future<CompilerResult> run(List<String> args) {
     var currentDir = new Directory.current().path;
     var compiler = new Compiler(fileSystem, options, currentDir);
     var res;
-    
     var tasks = new FutureGroup();
-    // TODO(adam): clean up the names
-    var f = compiler.run();
-    f.transform((_) => (res = new CompilerResult._(messages, compiler.output)))
+    
+    var compilerTask = compiler.run();
+    compilerTask.transform((_) => (res = new CompilerResult._(messages, compiler.output)))
     .chain((_) => symlinkPubPackages(res, options))
     .chain((_) => emitFiles(compiler.output, options.clean))
     .transform((_) => res);
-    tasks.add(f);
+    tasks.add(compilerTask);
     
-    var dart2jsBuilder = new Dart2jsBuilder(fileSystem, options, currentDir: currentDir);
-    var ff = dart2jsBuilder.run();
-    tasks.add(ff);
+    if (options.dart2jsEnabled) {
+      var dart2jsBuilder = new Dart2jsBuilder(fileSystem, 
+          options, messages, currentDir: currentDir, dart2js: options.dart2jsPath);
+      var dart2jsBuilderTask = dart2jsBuilder.run();
+      tasks.add(dart2jsBuilderTask);      
+    }
+
     
     return tasks.future;
   }, printTime: true, useColors: options.useColors);

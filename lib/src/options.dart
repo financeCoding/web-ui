@@ -36,7 +36,11 @@ class CompilerOptions {
    * Dart editor.
    */
   final bool jsonFormat;
-
+  
+  final bool dart2jsEnabled;
+  
+  final String dart2jsPath;
+  
   // We could make this faster, if it ever matters.
   factory CompilerOptions() => parse(['']);
 
@@ -49,7 +53,9 @@ class CompilerOptions {
       outputDir = args['out'],
       forceMangle = args['unique_output_filenames'],
       jsonFormat = args['json_format'],
-      inputFile = args.rest.length > 0 ? args.rest[0] : null;
+      inputFile = args.rest.length > 0 ? args.rest[0] : null,
+      dart2jsEnabled = args['dart2js'],
+      dart2jsPath = args['dart2js-path'];
 
   static CompilerOptions parse(List<String> arguments) {
     var parser = new ArgParser()
@@ -75,6 +81,10 @@ class CompilerOptions {
           ' (defaults to the same directory as the source file)')
       ..addOption('basedir', help: 'Base directory where to find all source '
           'files (defaults to the source file\'s directory)')
+      ..addFlag("dart2js", negatable: false,
+          help: "enable the generating of javascript code")    
+      ..addOption('dart2js-path', abbr: 'd',
+        help: 'absolute path for dart2js', defaultsTo: 'dart2js')          
       ..addFlag('help', abbr: 'h', help: 'Displays this help message',
           defaultsTo: false, negatable: false);
     try {

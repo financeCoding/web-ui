@@ -1,47 +1,25 @@
 library dart2js_builder;
 
 import 'dart:io' as io;
+import 'dart:collection' show SplayTreeMap;
 import 'package:html5lib/dom.dart';
 import 'package:html5lib/parser.dart';
 import 'file_system.dart';
 import 'file_system/path.dart';
 import 'files.dart';
 import 'info.dart';
-import 'dart:collection' show SplayTreeMap;
+import 'messages.dart';
 import 'options.dart';
 
-//import 'analyzer.dart';
-//import 'code_printer.dart';
-//import 'codegen.dart' as codegen;
-//import 'directive_parser.dart' show parseDartCode;
-//import 'emitters.dart';
-//import 'file_system.dart';
-//import 'file_system/path.dart';
-//import 'files.dart';
-//import 'html_cleaner.dart';
-//import 'info.dart';
-//import 'messages.dart';
-//import 'options.dart';
-//import 'utils.dart';
-
 class Dart2jsBuilder {
-  //String mainHtml;
-  Path outputDir;
-  String dart2js;
-  
+  final String dart2js; 
   final FileSystem fileSystem;
   final CompilerOptions options;
-  final List<SourceFile> files = <SourceFile>[];
-  final List<OutputFile> output = <OutputFile>[];
-
+  final Messages messages;
   Path _mainPath;
   PathInfo _pathInfo;
-
-  /** Information about source [files] given their href. */
-  final Map<Path, FileInfo> info = new SplayTreeMap<Path, FileInfo>();
-  
-  //Dart2jsBuilder(this.mainHtml, this.outputDir, {this.dart2js: "/Applications/dart/dart-sdk/bin/dart2js"}) {
-  Dart2jsBuilder(this.fileSystem, this.options, {String currentDir: null, this.dart2js: "/Applications/dart/dart-sdk/bin/dart2js"}) {
+   
+  Dart2jsBuilder(this.fileSystem, this.options, this.messages, {String currentDir: null, this.dart2js: "dart2js"}) {
     _mainPath = new Path(options.inputFile);
     var mainDir = _mainPath.directoryPath;
     var basePath =
@@ -56,9 +34,9 @@ class Dart2jsBuilder {
         outputPath.isAbsolute;
     if (anyAbsolute && !allAbsolute) {
       if (currentDir == null)  {
-//        messages.error('internal error: could not normalize paths. Please make '
-//            'the input, base, and output paths all absolute or relative, or '
-//            'specify "currentDir" to the Compiler constructor', null);
+        messages.error('internal error: could not normalize paths. Please make '
+            'the input, base, and output paths all absolute or relative, or '
+            'specify "currentDir" to the Compiler constructor', null);
         return;
       }
       var currentPath = new Path(currentDir);
@@ -69,11 +47,10 @@ class Dart2jsBuilder {
     _pathInfo = new PathInfo(basePath, outputPath, options.forceMangle);
   }
   
-  Future run() {
-    Completer c = new Completer();
-    
+  Future<String> run() {
+    Completer completer = new Completer();
     fileSystem.readText(_pathInfo.outputPath(_mainPath, ".html")).then((mainHtml) {
-      outputDir = _pathInfo.outputPath(_mainPath, ".html").directoryPath;
+      var outputDir = _pathInfo.outputPath(_mainPath, ".html").directoryPath;
       Document doc = parse(mainHtml);
       var scripts = doc.body.queryAll("script");
       scripts.forEach((Element script) { 
@@ -81,26 +58,23 @@ class Dart2jsBuilder {
         if (attributes.containsKey('type') && 
             attributes.containsValue('application/dart') && 
             attributes.containsKey('src')) {
-            io.ProcessOptions processOptions = new io.ProcessOptions();
-            processOptions.workingDirectory = outputDir.toNativePath();
-            processOptions.environment = new Map();
-            print("processOptions.workingDirectory = ${processOptions.workingDirectory}");
-            var processArgs = ["--verbose", "-o${attributes['src']}.js", "${attributes['src']}"];
-            print("Starting build of ${processOptions.workingDirectory}/${attributes['src']}.js");
-            io.Process.run(dart2js, processArgs, processOptions)
-            ..handleException((error) {
-              print("Error building ${processOptions.workingDirectory}/${attributes['src']}.js");
-              print(error);
-              c.complete("Error building ${processOptions.workingDirectory}/${attributes['src']}.js");
-            })
-            ..then((io.ProcessResult processResult) {
-              print("Success building ${processOptions.workingDirectory}/${attributes['src']}.js");
-              c.complete("Success building ${processOptions.workingDirectory}/${attributes['src']}.js");
-            });        
+          
+          io.ProcessOptions processOptions = new io.ProcessOptions();
+          processOptions.workingDirectory = outputDir.toNativePath();
+          processOptions.environment = io.Platform.environment;
+          var processArgs = ["--verbose", "-o${attributes['src']}.js", "${attributes['src']}"];
+          
+          io.Process.run(dart2js, processArgs, processOptions)
+          ..handleException((error) {
+            messages.error("Error building ${processOptions.workingDirectory}/${attributes['src']}.js", null);
+            completer.complete("Error building ${processOptions.workingDirectory}/${attributes['src']}.js");
+          })
+          ..then((io.ProcessResult processResult) {
+            completer.complete("Success building ${processOptions.workingDirectory}/${attributes['src']}.js");
+          });
         }
       });
-   
-    });
-    return c.future;
+    }); 
+    return completer.future;
   }
 }
