@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 library model;
+import 'dart:html';
 import 'package:objectory/objectory_browser.dart';
 import 'package:web_ui/watcher.dart';
 
@@ -54,7 +55,7 @@ class AppModel {
 
 ObjectoryQueryBuilder get $Todo => new ObjectoryQueryBuilder('Todo');
 
-const DefaultUri = '127.0.0.1:8080';
+var DefaultUri = window.location.host;
 
 //final AppModel app = new AppModel();
 AppModel _app;
