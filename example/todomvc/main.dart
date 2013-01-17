@@ -7,6 +7,7 @@ library main;
 import 'dart:html';
 import 'model.dart';
 import 'package:web_ui/web_ui.dart';
+import 'package:objectory/objectory.dart';
 
 main() {
   // listen on changes to #hash in the URL
@@ -26,6 +27,8 @@ void addTodo(Event e) {
   e.preventDefault(); // don't submit the form
   var input = query('#new-todo');
   if (input.value == '') return;
-  app.todos.add(new Todo(input.value));
+  var todo = new Todo(input.value);
+  app.todos.add(todo);
+  objectory.save(todo);
   input.value = '';
 }

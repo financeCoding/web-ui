@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 
 library model;
+import 'package:objectory/objectory_browser.dart';
+import 'package:web_ui/watcher.dart';
 
 class ViewModel {
   bool isVisible(Todo todo) => todo != null &&
@@ -18,7 +20,12 @@ final ViewModel viewModel = new ViewModel();
 // The real model:
 
 class AppModel {
-  List<Todo> todos = <Todo>[];
+  List todos = [];
+
+  resetTodos(List value) {
+    todos = value;
+    dispatch();
+  }
 
   // TODO(jmesserly): remove this once List has a remove method.
   void removeTodo(Todo todo) {
@@ -45,13 +52,44 @@ class AppModel {
   }
 }
 
-final AppModel app = new AppModel();
+ObjectoryQueryBuilder get $Todo => new ObjectoryQueryBuilder('Todo');
 
-class Todo {
-  String task;
-  bool done = false;
+const DefaultUri = '127.0.0.1:8080';
 
-  Todo(this.task);
+//final AppModel app = new AppModel();
+AppModel _app;
+AppModel get app {
+  if (_app == null) {
+    _app = new AppModel();
+     objectory = new ObjectoryWebsocketBrowserImpl(DefaultUri, () =>
+         objectory.registerClass('Todo',()=>new Todo('')), false); // set to true to drop models
+     objectory.initDomainModel().then((_) {
+       objectory.find($Todo).then((todos) {
+         app.resetTodos(todos);
+       });
+     });
+  }
+  return _app;
+}
+
+
+class Todo extends PersistentObject {
+//  String task;
+//  bool done = false;
+
+  String get task => getProperty('task');
+  set task(String value) => setProperty('task',value);
+
+  bool get done => getProperty('done');
+  set done(bool value) => setProperty('done',value);
+
+
+  //Todo(this.task);
+  Todo(String newTask) {
+    done = false;
+    task = newTask;
+    saveOnUpdate = true;
+  }
 
   String toString() => "$task ${done ? '(done)' : '(not done)'}";
 }

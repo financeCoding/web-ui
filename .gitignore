@@ -7,3 +7,4 @@ test/data/output/
 extension/output/
 out/
 build/compile_mirrors.dart
+.buildlog

@@ -6,7 +6,7 @@ version: 0.3.0
 dependencies:
   args: any
   # Pin html5lib so we don't get unexpected API breaks.
-  html5lib: ">=0.3.0 <0.3.1"
+  html5lib: { git: https://github.com/dart-lang/html5lib.git }
   logging: any
   unittest: any
   browser: any
@@ -14,3 +14,5 @@ dependencies:
   # of the web_ui package.
   js: any
   benchmark_harness: ">=1.0.2 <1.0.3"
+  objectory:
+    git: https://github.com/vadimtsushko/objectory.git
